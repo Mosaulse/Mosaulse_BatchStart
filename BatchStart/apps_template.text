@@ -1,0 +1,35 @@
+﻿; 批量应用启动配置文件
+; 注释行以;或#开头
+; 路径会自动添加双引号以处理空格
+; 例子1:
+; Unity="D:UnityUnity 2022.3.62f1EditorUnity.exe" -projectPath "D:DocumentsProjectsq3-clientprojectq3_unity_project"
+; 例子2:
+; Code="D:ProgramsMicrosoft VS CodeCode.exe" "D:DocumentsProjectsq3-clientprojectq3_unity_project"
+; 例子3:
+; ClashVerge="D:ProgramClash Vergeclash-verge.exe"
+
+; 应用名称=完整可执行文件路径 参数1 参数2 ...
+[app]
+
+
+[setting]
+; 是否写入日志文件
+WriteLog2Log=false
+
+; CPU使用率阈值（%）：用于决定是否启动下一个应用
+CPUThreshold=50
+
+; 最小启动间隔（秒）：确保应用启动有基本间隔
+MinInterval=1
+
+; 日志文件路径：指定日志保存位置
+LogFilePath=BatchStart.log
+
+; 最大等待时间（秒）：超过此时间强制启动下一个应用
+MaxWaitTime=5
+
+; 启动超时时间（秒）：判断应用是否成功启动的超时
+StartTimeout=3
+
+; 已运行应用处理方式：Skip（跳过）或 Restart（强制重启）
+AppAlreadyRunningAction=Skip
