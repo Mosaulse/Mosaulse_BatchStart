@@ -1,8 +1,8 @@
-// 配置编辑器核心逻辑
+// 配置编辑器核心逻辑 — 简化版（仅 Logging + Applications）
 class ConfigEditor {
     constructor() {
         this.apps = [];
-        this.settings = {};
+        this.logging = {}; // { WriteLog2Log, LogFilePath }
         this.hasChanges = false;
         this.updatePreviewTimeout = null;
         this.init();
@@ -11,13 +11,13 @@ class ConfigEditor {
     init() {
         this.initTheme();
         this.bindEvents();
-        // 从本地存储加载配置
         this.loadFromStorage();
         this.render();
         this.updatePreview();
     }
 
-    // 绑定事件
+    // ── 事件绑定 ────────────────────────────────────────
+
     bindEvents() {
         document.getElementById('addAppBtn').addEventListener('click', () => this.addApp());
         document.getElementById('saveBtn').addEventListener('click', () => this.saveToFile());
@@ -28,88 +28,69 @@ class ConfigEditor {
         document.getElementById('importFile').addEventListener('change', (e) => this.importConfig(e));
         document.getElementById('copyBtn').addEventListener('click', () => this.copyPreview());
 
-        // 主题切换
         document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
 
-        // 加载 apps.ini 文件
         document.getElementById('loadIniBtn').addEventListener('click', () => {
             document.getElementById('loadIniFile').click();
         });
         document.getElementById('loadIniFile').addEventListener('change', (e) => this.loadIniFile(e));
 
-
-
-        // 监听设置变更 - 使用事件委托
-        const settingsGrid = document.querySelector('.settings-grid');
-        if (settingsGrid) {
-            settingsGrid.addEventListener('input', (e) => {
+        // 日志设置变更
+        const grid = document.querySelector('.settings-grid');
+        if (grid) {
+            grid.addEventListener('input', (e) => {
                 if (e.target.matches('input, select')) {
                     this.hasChanges = true;
-                    this.updateSettings();
+                    this.updateLogging();
                     this.updatePreview();
-                    // 立即保存到本地存储
                     this.saveToStorage();
                 }
             });
         }
 
-        // 自动保存到本地存储
         window.addEventListener('beforeunload', () => {
-            if (this.hasChanges) {
-                this.saveToStorage();
-            }
+            if (this.hasChanges) this.saveToStorage();
         });
     }
 
-    // 从本地存储加载
+    // ── 本地存储 ────────────────────────────────────────
+
     loadFromStorage() {
         const saved = localStorage.getItem('batchStartConfig');
         if (saved) {
             try {
                 const data = JSON.parse(saved);
                 this.apps = data.apps || [];
-                this.settings = data.settings || this.getDefaultSettings();
+                this.logging = data.logging || this.getDefaultLogging();
             } catch (e) {
                 console.error('加载配置失败:', e);
-                this.settings = this.getDefaultSettings();
+                this.logging = this.getDefaultLogging();
             }
         } else {
-            // 没有存储的配置，使用默认设置
-            this.settings = this.getDefaultSettings();
+            this.logging = this.getDefaultLogging();
         }
     }
 
-    // 保存到本地存储
     saveToStorage() {
         localStorage.setItem('batchStartConfig', JSON.stringify({
             apps: this.apps,
-            settings: this.settings
+            logging: this.logging
         }));
     }
 
-    // 获取默认设置
-    getDefaultSettings() {
+    getDefaultLogging() {
         return {
-            WriteLog2Log: 'false',
-            CPUThreshold: 50,
-            MinInterval: 2,
+            WriteLog2Log: 'true',
             LogFilePath: 'BatchStart.log',
-            MaxWaitTime: 60,
-            StartTimeout: 10,
-            AppAlreadyRunningAction: 'Skip'
+            CPUThreshold: 50
         };
     }
 
-    // 初始化主题
-    initTheme() {
-        // 1. 检测系统主题
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            this.applyTheme('dark');
-        } else {
-            this.applyTheme('light');
-        }
+    // ── 主题 ────────────────────────────────────────────
 
-        // 2. 监听系统主题变化
+    initTheme() {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.applyTheme(prefersDark ? 'dark' : 'light');
         if (window.matchMedia) {
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
                 this.applyTheme(e.matches ? 'dark' : 'light');
@@ -117,68 +98,52 @@ class ConfigEditor {
         }
     }
 
-    // 切换主题
     toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        this.applyTheme(newTheme);
+        const cur = document.documentElement.getAttribute('data-theme');
+        this.applyTheme(cur === 'dark' ? 'light' : 'dark');
     }
 
-    // 应用主题
     applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) {
-            themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
-        }
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = theme === 'dark' ? '🌙' : '☀️';
     }
 
-    // 添加应用
+    // ── 应用 CRUD ───────────────────────────────────────
+
     addApp() {
-        const id = Date.now().toString();
         this.apps.push({
-            id,
+            id: Date.now().toString(),
             name: `应用${this.apps.length + 1}`,
-            params: [
-                { id: Date.now().toString() + '_1', value: '' }
-            ]
+            params: [{ id: Date.now().toString() + '_1', value: '' }]
         });
         this.hasChanges = true;
         this.render();
         this.updatePreview();
-        // 立即保存到本地存储
         this.saveToStorage();
     }
 
-    // 删除应用
     removeApp(appId) {
         if (confirm('确定要删除此应用吗?')) {
-            this.apps = this.apps.filter(app => app.id !== appId);
+            this.apps = this.apps.filter(a => a.id !== appId);
             this.hasChanges = true;
             this.render();
             this.updatePreview();
-            // 立即保存到本地存储
             this.saveToStorage();
         }
     }
 
-    // 添加参数
     addParam(appId) {
         const app = this.apps.find(a => a.id === appId);
         if (app) {
-            app.params.push({
-                id: Date.now().toString(),
-                value: ''
-            });
+            app.params.push({ id: Date.now().toString(), value: '' });
             this.hasChanges = true;
             this.render();
             this.updatePreview();
-            // 立即保存到本地存储
             this.saveToStorage();
         }
     }
 
-    // 删除参数
     removeParam(appId, paramId) {
         const app = this.apps.find(a => a.id === appId);
         if (app) {
@@ -186,24 +151,20 @@ class ConfigEditor {
             this.hasChanges = true;
             this.render();
             this.updatePreview();
-            // 立即保存到本地存储
             this.saveToStorage();
         }
     }
 
-    // 更新应用名称
     updateAppName(appId, value) {
         const app = this.apps.find(a => a.id === appId);
         if (app) {
             app.name = value;
             this.hasChanges = true;
             this.updatePreview();
-            // 立即保存到本地存储
             this.saveToStorage();
         }
     }
 
-    // 更新参数值
     updateParamValue(appId, paramId, value) {
         const app = this.apps.find(a => a.id === appId);
         if (app) {
@@ -212,64 +173,46 @@ class ConfigEditor {
                 param.value = value;
                 this.hasChanges = true;
                 this.updatePreview();
-                // 立即保存到本地存储
                 this.saveToStorage();
             }
         }
     }
 
-    // 路径自动加引号
-    quotePath(path) {
-        if (!path) return '';
+    // ── 日志设置 ──────────────────────────────────────
 
-        // 移除首尾空白
-        path = path.trim();
-
-        // 如果为空字符串，返回空
-        if (!path) return '';
-
-        // 移除已有的引号（无论是单引号还是双引号）
-        path = path.replace(/^["']|["']$/g, '');
-
-        // 如果是纯命令行参数（如 -projectPath, -batchmode 等），不加引号
-        if (path.startsWith('-') || path.startsWith('/')) {
-            return path;
-        }
-
-        // 如果包含空格、特殊字符或反斜杠结尾（Windows路径），则添加引号
-        const hasSpecialChars = /[ \t&|<>^()]/.test(path);
-        const isWindowsPath = /^[a-zA-Z]:\\/i.test(path);
-        const isNetworkPath = /^\\\\/.test(path);
-
-        if (hasSpecialChars || isWindowsPath || isNetworkPath) {
-            return `"${path}"`;
-        }
-
-        return path;
-    }
-
-    // 更新设置
-    updateSettings() {
-        this.settings = {
+    updateLogging() {
+        this.logging = {
             WriteLog2Log: document.getElementById('WriteLog2Log').value,
-            CPUThreshold: parseInt(document.getElementById('CPUThreshold').value),
-            MinInterval: parseInt(document.getElementById('MinInterval').value),
             LogFilePath: document.getElementById('LogFilePath').value,
-            MaxWaitTime: parseInt(document.getElementById('MaxWaitTime').value),
-            StartTimeout: parseInt(document.getElementById('StartTimeout').value),
-            AppAlreadyRunningAction: document.getElementById('AppAlreadyRunningAction').value
+            CPUThreshold: parseInt(document.getElementById('CPUThreshold').value)
         };
     }
 
-    // 渲染界面
+    // ── 路径工具 ───────────────────────────────────────
+
+    quotePath(path) {
+        if (!path) return '';
+        path = path.trim();
+        if (!path) return '';
+        path = path.replace(/^["']|["']$/g, '');
+        if (path.startsWith('-') || path.startsWith('/')) return path;
+        const hasSpecial = /[ \t&|<>^()]/.test(path);
+        const isWinPath = /^[a-zA-Z]:\\/i.test(path);
+        const isNetPath = /^\\\\/.test(path);
+        if (hasSpecial || isWinPath || isNetPath) return `"${path}"`;
+        return path;
+    }
+
+    // ── 渲染 ───────────────────────────────────────────
+
     render() {
-        // 渲染应用列表
+        // 应用列表
         const container = document.getElementById('appConfig');
         container.innerHTML = this.apps.map(app => `
             <div class="app-item" data-id="${app.id}">
                 <div class="app-header">
-                    <input type="text" 
-                           class="app-name-input" 
+                    <input type="text"
+                           class="app-name-input"
                            value="${this.escapeHtml(app.name)}"
                            placeholder="应用名称"
                            oninput="editor.updateAppName('${app.id}', this.value)">
@@ -282,8 +225,8 @@ class ConfigEditor {
                                 <span class="param-label">参数</span>
                                 <button class="btn btn-small btn-danger" onclick="editor.removeParam('${app.id}', '${param.id}')">✕</button>
                             </div>
-                            <input type="text" 
-                                   class="param-input" 
+                            <input type="text"
+                                   class="param-input"
                                    value="${this.escapeHtml(param.value)}"
                                    placeholder="输入参数或路径（自动添加引号）"
                                    oninput="editor.updateParamValue('${app.id}', '${param.id}', this.value)">
@@ -294,73 +237,61 @@ class ConfigEditor {
             </div>
         `).join('');
 
-        // 渲染设置
-        if (Object.keys(this.settings).length > 0) {
-            document.getElementById('WriteLog2Log').value = this.settings.WriteLog2Log;
-            document.getElementById('CPUThreshold').value = this.settings.CPUThreshold;
-            document.getElementById('MinInterval').value = this.settings.MinInterval;
-            document.getElementById('LogFilePath').value = this.settings.LogFilePath;
-            document.getElementById('MaxWaitTime').value = this.settings.MaxWaitTime;
-            document.getElementById('StartTimeout').value = this.settings.StartTimeout;
-            document.getElementById('AppAlreadyRunningAction').value = this.settings.AppAlreadyRunningAction;
+        // 日志设置
+        if (Object.keys(this.logging).length > 0) {
+            document.getElementById('WriteLog2Log').value = this.logging.WriteLog2Log;
+            document.getElementById('LogFilePath').value = this.logging.LogFilePath;
+            document.getElementById('CPUThreshold').value = this.logging.CPUThreshold;
         }
     }
 
-    // 生成 INI 配置
+    // ── INI 生成 ───────────────────────────────────────
+
     generateINI() {
         let ini = '; 批量应用启动配置文件\n';
-        ini += '; 注释行以;或#开头\n';
-        ini += '; 路径会自动添加双引号以处理空格\n';
-        ini += '; 例子1:\n';
-        ini += '; Unity="D:\Unity\Unity 2022.3.62f1\Editor\Unity.exe" -projectPath "D:\Documents\Projects\q3-client\project\q3_unity_project"\n';
-        ini += '; 例子2:\n';
-        ini += '; Code="D:\Programs\Microsoft VS Code\Code.exe" "D:\Documents\Projects\q3-client\project\q3_unity_project"\n';
-        ini += '; 例子3:\n';
-        ini += '; ClashVerge="D:\Program\Clash Verge\clash-verge.exe"\n\n';
+        ini += '; 注释行以 ; 或 # 开头\n';
+        ini += ';\n';
+        ini += '; [Logging]      — 日志配置\n';
+        ini += '; [Applications] — 要启动的应用列表\n';
+        ini += ';\n';
+        ini += '; 启动器会根据 CPU 使用率智能调度启动顺序。\n';
+        ini += ';\n';
+        ini += '; CPUThreshold 为 CPU 使用率阈值（%），低于此值才启动下一个应用\n';
+        ini += '; 默认为 50，可通过环境变量 BATCHSTART_CPU_THRESHOLD 覆盖\n';
+        ini += '\n';
+
+        ini += '[Logging]\n';
+        ini += `; 是否写入日志文件 (true / false)\nWriteLog2Log=${this.logging.WriteLog2Log}\n\n`;
+        ini += `; 日志文件路径（相对路径相对于脚本目录，或绝对路径）\nLogFilePath=${this.logging.LogFilePath}\n\n`;
+        ini += `; CPU 使用率阈值（%）：低于此值才启动下一个应用\nCPUThreshold=${this.logging.CPUThreshold}\n\n`;
+
+        ini += '[Applications]\n';
         ini += '; 应用名称=完整可执行文件路径 参数1 参数2 ...\n';
-        ini += '[app]\n';
 
         this.apps.forEach(app => {
-            const quotedParams = app.params
+            const parts = app.params
                 .map(p => this.quotePath(p.value))
                 .filter(p => p !== '')
                 .join(' ');
-            if (quotedParams) {
-                ini += `${app.name}=${quotedParams}\n`;
-            }
+            ini += parts ? `${app.name}=${parts}\n` : `${app.name}=\n`;
         });
-
-        ini += '\n[setting]\n';
-        ini += `; 是否写入日志文件\nWriteLog2Log=${this.settings.WriteLog2Log}\n\n`;
-        ini += `; CPU使用率阈值（%）：用于决定是否启动下一个应用\nCPUThreshold=${this.settings.CPUThreshold}\n\n`;
-        ini += `; 最小启动间隔（秒）：确保应用启动有基本间隔\nMinInterval=${this.settings.MinInterval}\n\n`;
-        ini += `; 日志文件路径：指定日志保存位置\nLogFilePath=${this.settings.LogFilePath}\n\n`;
-        ini += `; 最大等待时间（秒）：超过此时间强制启动下一个应用\nMaxWaitTime=${this.settings.MaxWaitTime}\n\n`;
-        ini += `; 启动超时时间（秒）：判断应用是否成功启动的超时\nStartTimeout=${this.settings.StartTimeout}\n\n`;
-        ini += `; 已运行应用处理方式：Skip（跳过）或 Restart（强制重启）\n`;
-        ini += `AppAlreadyRunningAction=${this.settings.AppAlreadyRunningAction}\n`;
 
         return ini;
     }
 
-    // 更新预览（带防抖）
-    updatePreview() {
-        // 清除之前的超时
-        if (this.updatePreviewTimeout) {
-            clearTimeout(this.updatePreviewTimeout);
-        }
+    // ── 预览 ───────────────────────────────────────────
 
-        // 设置新的超时，延迟50毫秒执行，避免频繁触发
+    updatePreview() {
+        if (this.updatePreviewTimeout) clearTimeout(this.updatePreviewTimeout);
         this.updatePreviewTimeout = setTimeout(() => {
-            this.updateSettings();
+            this.updateLogging();
             const preview = document.getElementById('preview');
-            const iniContent = this.generateINI();
-            const highlightedContent = Prism.highlight(iniContent, Prism.languages.ini, 'ini');
-            preview.innerHTML = highlightedContent;
+            const content = this.generateINI();
+            const highlighted = Prism.highlight(content, Prism.languages.ini, 'ini');
+            preview.innerHTML = highlighted;
         }, 50);
     }
 
-    // 复制预览内容
     async copyPreview() {
         try {
             await navigator.clipboard.writeText(this.generateINI());
@@ -370,40 +301,31 @@ class ConfigEditor {
         }
     }
 
-    // 保存到文件
+    // ── 保存 / 导出 / 导入 ─────────────────────────────
+
     async saveToFile() {
         try {
             const content = this.generateINI();
 
-            // 尝试使用 File System Access API 直接写入文件
             if ('showSaveFilePicker' in window) {
                 try {
                     const handle = await window.showSaveFilePicker({
                         suggestedName: 'apps.ini',
-                        types: [{
-                            description: 'INI 文件',
-                            accept: { 'text/plain': ['.ini'] }
-                        }]
+                        types: [{ description: 'INI 文件', accept: { 'text/plain': ['.ini'] } }]
                     });
-
                     const writable = await handle.createWritable();
                     await writable.write(content);
                     await writable.close();
-
                     this.hasChanges = false;
                     this.saveToStorage();
                     this.showNotification('配置已保存到 apps.ini!', 'success');
                     return;
                 } catch (e) {
-                    if (e.name !== 'AbortError') {
-                        console.log('无法使用 File System Access API，使用下载方式:', e);
-                    } else {
-                        return; // 用户取消保存
-                    }
+                    if (e.name !== 'AbortError') console.log('降级到下载:', e);
+                    else return;
                 }
             }
 
-            // 降级方案：使用传统下载方式
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -413,16 +335,15 @@ class ConfigEditor {
             URL.revokeObjectURL(url);
             this.hasChanges = false;
             this.saveToStorage();
-            this.showNotification('配置已下载，请将其替换项目目录中的 apps.ini', 'info');
+            this.showNotification('配置已下载，请替换项目目录中的 apps.ini', 'info');
         } catch (e) {
             console.error('保存失败:', e);
             this.showNotification('保存失败: ' + e.message, 'error');
         }
     }
 
-    // 导出配置
     exportConfig() {
-        const content = JSON.stringify({ apps: this.apps, settings: this.settings }, null, 2);
+        const content = JSON.stringify({ apps: this.apps, logging: this.logging }, null, 2);
         const blob = new Blob([content], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -433,7 +354,6 @@ class ConfigEditor {
         this.showNotification('配置已导出!', 'success');
     }
 
-    // 导入配置
     importConfig(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -442,17 +362,13 @@ class ConfigEditor {
         reader.onload = (e) => {
             try {
                 const content = e.target.result;
-
-                // 尝试解析 JSON 导出文件
                 if (file.name.endsWith('.json')) {
                     const data = JSON.parse(content);
                     this.apps = data.apps || [];
-                    this.settings = data.settings || this.getDefaultSettings();
+                    this.logging = data.logging || this.getDefaultLogging();
                 } else {
-                    // 解析 INI 文件
                     this.parseINI(content);
                 }
-
                 this.hasChanges = false;
                 this.render();
                 this.updatePreview();
@@ -463,10 +379,9 @@ class ConfigEditor {
             }
         };
         reader.readAsText(file);
-        event.target.value = ''; // 重置文件输入
+        event.target.value = '';
     }
 
-    // 加载 INI 文件（手动加载）
     loadIniFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -474,10 +389,9 @@ class ConfigEditor {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const content = e.target.result;
-                this.parseINI(content);
+                this.parseINI(e.target.result);
                 this.hasChanges = false;
-                this.saveToStorage(); // 保存到本地存储
+                this.saveToStorage();
                 this.render();
                 this.updatePreview();
                 this.showNotification('已加载配置文件!', 'success');
@@ -487,103 +401,77 @@ class ConfigEditor {
             }
         };
         reader.readAsText(file);
-        event.target.value = ''; // 重置文件输入
+        event.target.value = '';
     }
 
-    // 解析 INI 文件
+    // ── INI 解析（[Logging] + [Applications]，兼容旧 [app]） ──
+
     parseINI(content) {
         const lines = content.split('\n');
         let currentSection = null;
         this.apps = [];
-        this.settings = this.getDefaultSettings();
+        this.logging = this.getDefaultLogging();
 
         lines.forEach(line => {
             line = line.trim();
-
-            // 跳过空行和注释
             if (!line || line.startsWith(';') || line.startsWith('#')) return;
 
-            // 解析区块
             if (line.startsWith('[') && line.endsWith(']')) {
                 currentSection = line.substring(1, line.length - 1);
                 return;
             }
 
-            // 解析键值对
-            if (line.includes('=')) {
-                const [key, value] = line.split('=').map(s => s.trim());
+            if (!line.includes('=')) return;
+            const [key, value] = line.split('=').map(s => s.trim());
 
-                if (currentSection === 'app') {
-                    // 解析应用参数
-                    const params = this.parseParams(value);
-                    this.apps.push({
-                        id: Date.now().toString() + '_' + this.apps.length,
-                        name: key,
-                        params
-                    });
-                } else if (currentSection === 'setting') {
-                    this.settings[key] = value;
-                }
+            if (currentSection === 'Applications' || currentSection === 'app') {
+                const params = this.parseParams(value);
+                this.apps.push({
+                    id: Date.now().toString() + '_' + this.apps.length,
+                    name: key,
+                    params
+                });
+            } else if (currentSection === 'Logging') {
+                if (key === 'WriteLog2Log') this.logging.WriteLog2Log = value;
+                else if (key === 'LogFilePath') this.logging.LogFilePath = value;
+                else if (key === 'CPUThreshold') this.logging.CPUThreshold = parseInt(value) || 50;
             }
         });
     }
 
-    // 解析参数字符串
+    // ── 参数解析 ───────────────────────────────────────
+
     parseParams(value) {
         if (!value || value.trim() === '') return [];
-
         const params = [];
         let current = '';
         let inQuotes = false;
         let i = 0;
-
         while (i < value.length) {
-            const char = value[i];
-
-            if (char === '"') {
-                // 跳过引号，切换引号状态
-                inQuotes = !inQuotes;
-                i++;
-            } else if (char === ' ' && !inQuotes) {
-                // 在引号外遇到空格，保存当前参数
+            const ch = value[i];
+            if (ch === '"') { inQuotes = !inQuotes; i++; }
+            else if (ch === ' ' && !inQuotes) {
                 if (current.trim()) {
-                    params.push({
-                        id: Date.now().toString() + '_' + params.length,
-                        value: current.trim()
-                    });
+                    params.push({ id: Date.now().toString() + '_' + params.length, value: current.trim() });
                     current = '';
                 }
                 i++;
-            } else {
-                current += char;
-                i++;
-            }
+            } else { current += ch; i++; }
         }
-
-        // 保存最后一个参数
-        if (current.trim()) {
-            params.push({
-                id: Date.now().toString() + '_' + params.length,
-                value: current.trim()
-            });
-        }
-
+        if (current.trim()) params.push({ id: Date.now().toString() + '_' + params.length, value: current.trim() });
         return params;
     }
 
-    // 显示通知
-    showNotification(message, type = 'info') {
-        const notification = document.getElementById('notification');
-        notification.textContent = message;
-        notification.className = `notification notification-${type}`;
-        notification.style.display = 'block';
+    // ── 通知 ───────────────────────────────────────────
 
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 3000);
+    showNotification(message, type = 'info') {
+        const el = document.getElementById('notification');
+        el.textContent = message;
+        el.className = `notification notification-${type}`;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 3000);
     }
 
-    // HTML 转义
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -591,11 +479,10 @@ class ConfigEditor {
     }
 }
 
-// 确保页面加载完成后初始化
+// ── 初始化 ────────────────────────────────────────────────
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.editor = new ConfigEditor();
-    });
+    document.addEventListener('DOMContentLoaded', () => { window.editor = new ConfigEditor(); });
 } else {
     window.editor = new ConfigEditor();
 }

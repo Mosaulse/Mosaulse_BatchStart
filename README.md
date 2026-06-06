@@ -8,7 +8,6 @@
 
 [功能特性](#功能特性) • [快速开始](#快速开始) • [配置指南](#配置指南) • [使用方法](#使用方法) • [常见问题](#常见问题)
 
-
 ---
 
 ## 📖 项目简介
@@ -82,10 +81,12 @@ Get-ExecutionPolicy
 ### 第一步:获取项目
 
 **方式 1:下载压缩包**
+
 1. 访问项目页面下载 ZIP 压缩包
 2. 解压到任意目录(如 `D:\BatchStart`)
 
 **方式 2:Git 克隆**
+
 ```bash
 git clone https://github.com/yourusername/BatchStart.git
 cd BatchStart
@@ -96,7 +97,12 @@ cd BatchStart
 编辑 `apps.ini` 文件,添加您需要启动的应用程序:
 
 ```ini
-[app]
+[Logging]
+WriteLog2Log=true
+LogFilePath=BatchStart.log
+CPUThreshold=50
+
+[Applications]
 ; 基本格式:应用名称=可执行文件路径
 微信=D:\Programs\Tencent\Weixin\Weixin.exe
 记事本=C:\Windows\System32\notepad.exe
@@ -104,19 +110,16 @@ cd BatchStart
 ; 带参数的应用(使用引号包裹路径)
 Unity="D:\Unity\Unity 2022.3.62f1\Editor\Unity.exe" -projectPath "D:\Projects\MyProject"
 VSCode="C:\Program Files\Microsoft VS Code\Code.exe" "D:\Projects\MyProject"
-
-[setting]
-WriteLog2Log=false
-CPUThreshold=50
-MinInterval=1
 ```
 
 ### 第三步:运行脚本
 
 **方式 1:双击运行**(推荐)
+
 - 直接双击 `BatchStart.bat` 文件
 
 **方式 2:PowerShell 运行**
+
 ```powershell
 cd BatchStart
 .\BatchStart.ps1
@@ -125,6 +128,7 @@ cd BatchStart
 ### 第四步:验证结果
 
 脚本运行后会显示彩色输出,每个应用的启动状态都会实时显示:
+
 - ✅ 绿色:启动成功
 - ⚠️ 黄色:警告信息
 - ❌ 红色:错误信息
@@ -136,23 +140,23 @@ cd BatchStart
 
 ### 配置文件结构
 
-`apps.ini` 文件包含两个主要区块:`[app]` 和 `[setting]`。
+`apps.ini` 文件包含两个段落：`[Logging]`（日志配置）和 `[Applications]`（应用列表）。
 
 ```ini
-[app]
-; 应用配置区块
+[Logging]
+; 日志配置
+WriteLog2Log=true
+LogFilePath=BatchStart.log
+
+[Applications]
+; 应用配置
 应用名称1=路径 参数1 参数2 ...
 应用名称2=路径 参数1 参数2 ...
-
-[setting]
-; 全局设置区块
-参数名1=值1
-参数名2=值2
 ```
 
 ---
 
-### 📱 [app] 区块 - 应用程序配置
+### 📱 [Applications] 区块 - 应用程序配置
 
 #### 配置格式
 
@@ -161,6 +165,7 @@ cd BatchStart
 ```
 
 **规则说明**:
+
 - **应用名称**:自定义标识符,用于日志输出和识别
 - **路径分隔**:应用将按照在配置文件中出现的顺序启动
 - **参数支持**:路径后可跟随命令行参数,用空格分隔
@@ -169,35 +174,40 @@ cd BatchStart
 #### 配置示例
 
 **示例 1:单个可执行文件**
+
 ```ini
-[app]
+[Applications]
 记事本=C:\Windows\System32\notepad.exe
 微信=D:\Programs\Tencent\Weixin\Weixin.exe
 ```
 
 **示例 2:带空格的路径**
+
 ```ini
-[app]
+[Applications]
 VSCode="C:\Program Files\Microsoft VS Code\Code.exe"
 Unity="D:\Unity\Unity 2022.3.62f1\Editor\Unity.exe"
 ```
 
 **示例 3:带参数的应用**
+
 ```ini
-[app]
+[Applications]
 UnityProject="D:\Unity\Unity 2022.3.62f1\Editor\Unity.exe" -projectPath "D:\Projects\MyProject"
 VSCode="C:\Program Files\Microsoft VS Code\Code.exe" "D:\Projects\MyProject"
 ```
 
 **示例 4:多个参数**
+
 ```ini
-[app]
+[Applications]
 MyApp="C:\My App\app.exe" -arg1 "value with spaces" -arg2 value2
 ```
 
 **示例 5:混合配置**
+
 ```ini
-[app]
+[Applications]
 ; 系统工具
 Everything=D:\Scoop\apps\everything\current\everything.exe
 Rainmeter=D:\Scoop\apps\Rainmeter\current\Rainmeter.exe
@@ -213,228 +223,56 @@ Chrome="C:\Program Files\Google\Chrome\Application\chrome.exe" --incognito
 #### 路径处理规则
 
 以下情况**必须使用双引号**:
+
 - 路径包含空格: `"D:\Program Files\VS Code\Code.exe"`
 - 路径包含特殊字符: `"D:\Path&Value\app.exe"`
 - 参数值包含空格: `-projectPath "D:\My Projects\Project1"`
 
 以下情况**不需要引号**:
+
 - 无空格路径: `D:\app.exe`
 - 命令行参数: `-projectPath`
 - 简单参数值: `-arg1 value1`
 
 ---
 
-### ⚙️ [setting] 区块 - 全局设置
+### 📝 [Logging] 区块 — 日志与阈值配置
 
-#### 完整参数列表
+| 参数名         | 类型         | 默认值           | 说明                                       |
+| -------------- | ------------ | ---------------- | ------------------------------------------ |
+| `WriteLog2Log` | 布尔值       | `false`          | 是否将日志写入文件                         |
+| `LogFilePath`  | 字符串       | `BatchStart.log` | 日志文件路径（相对或绝对路径）              |
+| `CPUThreshold` | 数字 (1-100) | `50`             | CPU 使用率阈值，低于此值才启动下一个应用   |
 
-| 参数名                    | 类型         | 默认值           | 说明                    |
-| ------------------------- | ------------ | ---------------- | ----------------------- |
-| `WriteLog2Log`            | 布尔值       | `false`          | 是否将日志写入文件      |
-| `CPUThreshold`            | 数字 (0-100) | `50`             | CPU 使用率阈值(%)       |
-| `MinInterval`             | 数字 (秒)    | `1`              | 应用启动的最小间隔时间  |
-| `LogFilePath`             | 字符串       | `BatchStart.log` | 日志文件保存路径        |
-| `MaxWaitTime`             | 数字 (秒)    | `10`             | 等待 CPU 降低的最大时间 |
-| `StartTimeout`            | 数字 (秒)    | `3`              | 应用启动超时时间        |
-| `AppAlreadyRunningAction` | 字符串       | `Skip`           | 已运行应用的处理方式    |
+**示例**：
 
----
-
-#### 详细参数说明
-
-##### 1. WriteLog2Log - 日志文件开关
-
-| 值      | 说明             |
-| ------- | ---------------- |
-| `true`  | 启用日志文件记录 |
-| `false` | 禁用日志文件记录 |
-
-**使用场景**:
-- 调试问题时启用,便于排查启动失败原因
-- 日常使用可关闭,减少磁盘 I/O
-
-**示例**:
 ```ini
-WriteLog2Log=true   # 启用日志
-WriteLog2Log=false  # 禁用日志
-```
-
----
-
-##### 2. CPUThreshold - CPU 使用率阈值
-
-| 范围    | 推荐场景                |
-| ------- | ----------------------- |
-| `30-40` | 低配置电脑,启动大型应用 |
-| `40-50` | 普通配置(默认值)        |
-| `50-60` | 中高配置电脑            |
-| `60-70` | 高性能电脑              |
-
-**工作原理**:
-- 脚本会实时监控 CPU 使用率
-- 只有当 CPU 使用率低于此值时才启动下一个应用
-- 如果超过阈值,会等待 1 秒后重新检查
-
-**示例**:
-```ini
-# 低配置电脑
-CPUThreshold=30
-
-# 普通配置
-CPUThreshold=50
-
-# 高性能电脑
-CPUThreshold=70
-```
-
----
-
-##### 3. MinInterval - 最小启动间隔
-
-| 值    | 适用场景        |
-| ----- | --------------- |
-| `0-1` | 启动轻量级应用  |
-| `1-2` | 默认值,通用场景 |
-| `2-5` | 启动大型应用    |
-
-**作用**: 确保两个应用启动之间有基本的时间间隔
-
-**示例**:
-```ini
-# 快速启动小工具
-MinInterval=0
-
-# 默认间隔
-MinInterval=1
-
-# 给大型应用更多准备时间
-MinInterval=3
-```
-
----
-
-##### 4. LogFilePath - 日志文件路径
-
-**格式**:
-- 相对路径: `BatchStart.log`(保存在脚本所在目录)
-- 绝对路径: `D:\Logs\BatchStart.log`
-- 自定义名称: `app-start-2024.log`
-
-**示例**:
-```ini
-# 默认位置
+[Logging]
+WriteLog2Log=true
 LogFilePath=BatchStart.log
-
-# 自定义目录
-LogFilePath=D:\Logs\BatchStart.log
-
-# 带日期的日志
-LogFilePath=logs\BatchStart-$(Get-Date -Format 'yyyy-MM-dd').log
-```
-
----
-
-##### 5. MaxWaitTime - 最大等待时间
-
-| 值      | 说明             |
-| ------- | ---------------- |
-| `5-10`  | 快速启动(默认值) |
-| `10-30` | 给系统更多时间   |
-| `30-60` | 启动大型应用场景 |
-
-**工作原理**:
-- 脚本等待 CPU 降低的最大时间
-- 超过此时间后,即使 CPU 仍高于阈值也会强制启动应用
-
-**示例**:
-```ini
-# 快速启动,不等待
-MaxWaitTime=5
-
-# 默认值
-MaxWaitTime=10
-
-# 给系统充足时间
-MaxWaitTime=30
-```
-
----
-
-##### 6. StartTimeout - 应用启动超时时间
-
-| 值      | 适用场景               |
-| ------- | ---------------------- |
-| `3-5`   | 轻量级应用             |
-| `5-10`  | 默认值                 |
-| `10-20` | 大型应用(如 Unity,IDE) |
-
-**作用**: 判断应用是否成功启动的超时时间
-
-**示例**:
-```ini
-# 快速应用
-StartTimeout=3
-
-# 默认值
-StartTimeout=10
-
-# 大型应用
-StartTimeout=20
-```
-
----
-
-##### 7. AppAlreadyRunningAction - 已运行应用处理方式
-
-| 值        | 说明                      | 使用场景             |
-| --------- | ------------------------- | -------------------- |
-| `Skip`    | 跳过启动,不重复打开(默认) | 日常使用             |
-| `Restart` | 强制关闭后重新启动        | 需要确保应用最新状态 |
-
-**示例**:
-```ini
-# 跳过已运行的应用(推荐)
-AppAlreadyRunningAction=Skip
-
-# 强制重启
-AppAlreadyRunningAction=Restart
-```
-
----
-
-#### 完整配置示例
-
-```ini
-[app]
-; === 系统工具 ===
-Everything="D:\Scoop\apps\everything\current\everything.exe"
-Rainmeter="D:\Scoop\apps\Rainmeter\current\Rainmeter.exe"
-AutoDarkMode="D:\Scoop\apps\autodarkmode\current\AutoDarkModeApp.exe"
-
-; === 开发工具 ===
-VSCode="C:\Program Files\Microsoft VS Code\Code.exe" "E:\Documents\Projects\MyToys"
-Unity="D:\Program\Unity\UEditor\Unity 6000.0.58f2\Editor\Unity.exe" -projectPath "E:\Documents\Projects\MyToys\LL001_Uinty_Project"
-
-; === 日常应用 ===
-微信=D:\Programs\Tencent\Weixin\Weixin.exe
-Chrome="C:\Program Files\Google\Chrome\Application\chrome.exe"
-
-[setting]
-; === 日志设置 ===
-WriteLog2Log=false
-LogFilePath=BatchStart.log
-
-; === 性能设置 ===
 CPUThreshold=50
-MinInterval=1
-MaxWaitTime=10
-
-; === 超时设置 ===
-StartTimeout=3
-
-; === 应用状态处理 ===
-AppAlreadyRunningAction=Skip
 ```
+
+---
+
+### 🧠 智能启动策略
+
+脚本会根据 CPU 使用率**自动调度**应用启动，无需任何手动设置：
+
+| CPU 负载等级 | 范围       | 行为                               |
+| ------------ | ---------- | ---------------------------------- |
+| 🟢 低        | ≤ 阈值     | 立即启动下一个应用                 |
+| 🟡 中高      | 阈值 ~ 60% | 等待 5 秒后重试                    |
+| 🟠 高        | 61% ~ 80%  | 等待 15 秒后重试                   |
+| 🔴 非常高    | > 80%      | 等待 30 秒，并给出警告             |
+| ⏰ 超时      | > 120 秒   | 强制启动（防止死锁）               |
+
+**额外特性**：
+
+- **滑动窗口平均**：取最近 3 次 CPU 采样平均值，避免瞬时尖峰误判
+- **呼吸间隔**：每个应用启动后自动等待 3 秒，让系统喘口气
+- **自动跳过**：已在运行的应用自动跳过，不会重复启动
+- **启动计数**：执行完毕汇总显示「已启动 / 已跳过 / 失败」统计
 
 ---
 
@@ -507,11 +345,13 @@ BatchStart 提供了一个直观的 Web 配置编辑器,让您可以通过图形
 ### 启动方式
 
 **方式一:双击启动器**
+
 ```batch
 双击 ConfighEditor/Start-ConfigEditor.bat
 ```
 
 **方式二:直接打开 HTML 文件**
+
 ```
 双击 ConfighEditor/config-editor.html
 ```
@@ -542,6 +382,7 @@ BatchStart 提供了一个直观的 Web 配置编辑器,让您可以通过图形
 **Q: 导入后路径被截断怎么办?**
 
 确保你的 `apps.ini` 文件中的路径已经正确使用双引号包裹:
+
 ```ini
 # 正确
 Code="D:\Programs\Microsoft VS Code\Code.exe" "D:\Documents\Projects\project"
@@ -579,6 +420,7 @@ Code=D:\Programs\Microsoft VS Code\Code.exe D:\Documents\Projects\project
 | ISRUN   | 🔄    | 青色 | 应用已运行 |
 
 **特殊标记**:
+
 - 🚀 脚本启动
 - ⚙️ 配置文件加载
 - 📋 应用信息
@@ -593,6 +435,7 @@ Code=D:\Programs\Microsoft VS Code\Code.exe D:\Documents\Projects\project
 当 `WriteLog2Log=true` 时,日志会写入指定的文件。
 
 **日志格式**:
+
 ```
 [2024-12-04 10:00:00] [INFO] 批量应用启动管理脚本已启动...
 [2024-12-04 10:00:01] [INFO] [微信] 正在启动应用: D:\Programs\Weixin\Weixin.exe
@@ -601,6 +444,7 @@ Code=D:\Programs\Microsoft VS Code\Code.exe D:\Documents\Projects\project
 ```
 
 **查看日志**:
+
 ```powershell
 # 实时查看日志
 Get-Content BatchStart.log -Wait
@@ -620,9 +464,7 @@ Select-String -Path BatchStart.log -Pattern (Get-Date -Format 'yyyy-MM-dd')
 BatchStart/
 ├── BatchStart/                             # 核心脚本目录
 │   ├── BatchStart.ps1                      # 主脚本文件
-│   ├── BatchStart.bat                      # 批处理启动器
-│   ├── apps_template.text                  # 配置模板
-│   └── BatchStart_template.bat.text        # 备份启动器
+│   └── apps_template.text                  # 配置模板
 ├── ConfighEditor/                          # Web 配置编辑器
 │   ├── config-editor.html                  # 配置编辑器主页面
 │   ├── config-editor.js                    # 配置编辑器核心逻辑
@@ -644,6 +486,7 @@ BatchStart/
 这是 PowerShell 的执行策略限制。
 
 **解决方法**:
+
 ```powershell
 # 以管理员身份运行 PowerShell,然后执行:
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -674,12 +517,14 @@ Get-ExecutionPolicy -List
 **Q3: 应用启动失败,提示"路径不存在"**
 
 **检查清单**:
+
 1. 路径是否正确
 2. 路径中是否包含特殊字符,如有请使用引号包裹
 3. 是否有访问该路径的权限
 4. 应用是否已经安装
 
 **验证方法**:
+
 ```powershell
 # 测试路径是否存在
 Test-Path "D:\Programs\VS Code\Code.exe"
@@ -693,6 +538,7 @@ Get-Item "D:\Programs\VS Code\Code.exe"
 **Q4: 路径包含空格如何处理?**
 
 **正确做法**:
+
 ```ini
 # 使用双引号包裹
 VSCode="C:\Program Files\Microsoft VS Code\Code.exe"
@@ -702,6 +548,7 @@ Unity="D:\Unity\Unity 2022.3.62f1\Editor\Unity.exe" -projectPath "D:\My Projects
 ```
 
 **错误做法**:
+
 ```ini
 # 不加引号会导致解析错误
 VSCode=C:\Program Files\Microsoft VS Code\Code.exe
@@ -711,10 +558,10 @@ VSCode=C:\Program Files\Microsoft VS Code\Code.exe
 
 **Q5: 如何调整应用启动顺序?**
 
-直接在 `apps.ini` 的 `[app]` 区块中调整应用的顺序即可:
+直接在 `apps.ini` 的 `[Applications]` 区块中调整应用的顺序即可：
 
 ```ini
-[app]
+[Applications]
 # 应用1(会最先启动)
 微信=D:\Programs\Weixin\Weixin.exe
 
@@ -735,17 +582,19 @@ Chrome=C:\Program Files\Chrome\chrome.exe
 
 **推荐配置**:
 
-| 电脑配置 | CPU 阈值 | 启动间隔 |
-| -------- | -------- | -------- |
-| 低配置   | 30-40    | 2-3 秒   |
-| 普通配置 | 40-50    | 1-2 秒   |
-| 高配置   | 50-60    | 1 秒     |
-| 超高配置 | 60-70    | 0-1 秒   |
+| 电脑配置 | CPU 阈值（`CPUThreshold`） |
+| -------- | -------------------------- |
+| 低配置   | 30-40                      |
+| 普通配置 | 40-50                      |
+| 高配置   | 50-60                      |
+| 超高配置 | 60-70                      |
 
 **调整建议**:
-- 启动大型应用(如 Unity,IDE):降低阈值到 30-40,增加间隔到 2-3 秒
-- 启动小型工具:提高阈值到 50-60,减少间隔到 1 秒或更低
-- 观察实际效果,根据需要微调
+
+- 启动大型应用(如 Unity, IDE): 建议降低到 30-40
+- 启动小型工具: 可提高到 50-60
+- 通过环境变量快速测试: `$env:BATCHSTART_CPU_THRESHOLD=70; .\BatchStart.ps1`
+- 观察实际效果，根据需要微调 `apps.ini` 中的 `CPUThreshold`
 
 ---
 
@@ -753,53 +602,53 @@ Chrome=C:\Program Files\Chrome\chrome.exe
 
 **优化策略**:
 
-1. **提高 CPU 阈值**:
+1. **提高 CPU 阈值**（在 `apps.ini` 中调整或通过环境变量）:
+
 ```ini
-CPUThreshold=70  # 提高到 70,减少等待时间
+[Logging]
+CPUThreshold=70
 ```
 
-2. **减少启动间隔**:
-```ini
-MinInterval=0  # 设为 0,快速连续启动
+或:
+
+```powershell
+$env:BATCHSTART_CPU_THRESHOLD=70
+.\BatchStart.ps1
 ```
 
-3. **缩短等待时间**:
-```ini
-MaxWaitTime=5  # 从默认的 10 秒缩短到 5 秒
-```
+1. **调整应用顺序**: 将最常用的应用放在前面，在 CPU 负载最低时优先启动。
 
-4. **使用 Skip 模式**:
-```ini
-AppAlreadyRunningAction=Skip  # 跳过已运行的应用
-```
+2. **注释掉不需要的应用**: 在 `[Applications]` 中用 `;` 注释掉暂时不启动的应用。
 
 ---
 
 **Q8: 某些应用启动失败,但其他应用正常**
 
 **可能原因**:
+
 1. 应用需要管理员权限
 2. 应用路径不正确
 3. 应用需要特定的环境变量
 4. 启动超时时间不够
 
 **解决方法**:
+
 1. **检查应用路径**:
+
 ```powershell
 Test-Path "D:\Path\To\YourApp.exe"
 ```
 
-2. **增加启动超时**:
-```ini
-StartTimeout=15  # 从默认的 3 秒增加到 15 秒
-```
+1. **检查应用是否需要管理员权限**（尝试右键 → 以管理员身份运行）
 
-3. **手动测试启动**:
+2. **手动测试启动**:
+
 ```powershell
 Start-Process "D:\Path\To\YourApp.exe"
 ```
 
-4. **查看详细日志**:
+1. **查看详细日志**:
+
 ```ini
 WriteLog2Log=true  # 启用日志,查看详细错误信息
 ```
@@ -818,6 +667,7 @@ WriteLog2Log=true  # 启用日志,查看详细错误信息
 4. 操作选择"启动程序"
 5. 程序填写: `powershell.exe`
 6. 参数填写:
+
 ```powershell
 -ExecutionPolicy Bypass -WindowStyle Hidden -File "D:\Path\To\BatchStart\BatchStart.ps1"
 ```
@@ -825,16 +675,19 @@ WriteLog2Log=true  # 启用日志,查看详细错误信息
 **方法 2:添加到启动文件夹**
 
 1. 创建快捷方式,目标为:
+
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File "D:\Path\To\BatchStart\BatchStart.ps1"
 ```
 
-2. 将快捷方式放到启动文件夹:
+1. 将快捷方式放到启动文件夹:
+
 ```powershell
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 ```
 
 **说明**:
+
 - `-WindowStyle Hidden`:启动时隐藏 PowerShell 窗口
 - 如需查看输出,可改为 `-WindowStyle Normal`
 
@@ -875,6 +728,7 @@ powershell.exe -ExecutionPolicy Bypass -File "BatchStart.ps1" -ConfigFile "apps-
 这表示你的浏览器不支持直接写入文件,配置已下载到默认下载文件夹。
 
 **解决方法**:
+
 1. 在下载文件夹找到 `apps.ini` 文件
 2. 手动将下载的文件替换项目目录中的原文件
 
@@ -885,18 +739,21 @@ powershell.exe -ExecutionPolicy Bypass -File "BatchStart.ps1" -ConfigFile "apps-
 **Q13: 如何查看详细的启动日志?**
 
 **方法 1:启用日志文件**
+
 ```ini
-[setting]
+[Logging]
 WriteLog2Log=true
 LogFilePath=BatchStart.log
 ```
 
 **方法 2:使用 PowerShell 管道**
+
 ```powershell
 .\BatchStart.ps1 | Tee-Object -FilePath "output.log"
 ```
 
 **方法 3:查看日志文件**
+
 ```powershell
 # 实时查看日志
 Get-Content BatchStart.log -Wait
@@ -915,29 +772,34 @@ Select-String -Path BatchStart.log -Pattern (Get-Date -Format 'yyyy-MM-dd')
 **调试步骤**:
 
 1. **启用详细日志**:
+
 ```ini
-[setting]
+[Logging]
 WriteLog2Log=true
 LogFilePath=debug.log
-```
+``````
 
-2. **查看日志文件**:
+1. **查看日志文件**:
+
 ```powershell
 Get-Content debug.log | Select-String "ERROR" -Context 2
 ```
 
-3. **验证配置文件**:
+1. **验证配置文件**:
+
 ```powershell
 # 检查配置文件语法
 Get-Content apps.ini | Select-String "^\["
 ```
 
-4. **手动测试应用启动**:
+1. **手动测试应用启动**:
+
 ```powershell
 Start-Process "D:\Path\To\YourApp.exe"
 ```
 
-5. **查看 PowerShell 错误**:
+1. **查看 PowerShell 错误**:
+
 ```powershell
 $Error[0] | Select-Object *
 ```
@@ -949,8 +811,9 @@ $Error[0] | Select-Object *
 **步骤**:
 
 1. **注释掉其他应用,只保留有问题的应用**:
+
 ```ini
-[app]
+[Applications]
 ; 微信=D:\Programs\Weixin\Weixin.exe
 ; VSCode=C:\Program Files\VS Code\Code.exe
 
@@ -958,15 +821,17 @@ $Error[0] | Select-Object *
 Unity="D:\Unity\Unity.exe" -projectPath "D:\Projects\MyProject"
 ```
 
-2. **观察输出日志**,查找错误信息
+1. **观察输出日志**,查找错误信息
 
-3. **手动验证路径**:
+2. **手动验证路径**:
+
 ```powershell
 Test-Path "D:\Unity\Unity.exe"
 Get-Item "D:\Unity\Unity.exe"
 ```
 
-4. **手动启动应用**:
+1. **手动启动应用**:
+
 ```powershell
 Start-Process "D:\Unity\Unity.exe" -ArgumentList "-projectPath `"D:\Projects\MyProject`""
 ```
@@ -975,55 +840,49 @@ Start-Process "D:\Unity\Unity.exe" -ArgumentList "-projectPath `"D:\Projects\MyP
 
 ## 📖 功能详解
 
-### 1. 智能启动控制
+### 1. 智能启动控制（CPU 感知）
 
-脚本会实时监控系统 CPU 使用率,只有当 CPU 使用率低于设定阈值时才启动下一个应用,避免系统过载。
+脚本会**滑动窗口平均** CPU 使用率（最近 3 次采样），根据负载等级自动调度：
 
-**工作流程**:
-1. 检查当前 CPU 使用率
-2. 如果低于阈值,立即启动应用
-3. 如果高于阈值,等待 1 秒后重新检查
-4. 如果等待时间超过 `MaxWaitTime`,强制启动应用
+| 负载等级 | CPU 范围         | 行为                     |
+| -------- | ---------------- | ------------------------ |
+| 🟢 正常  | ≤ 阈值（默认 50%） | 立即启动                 |
+| 🟡 稍高  | ~ 60%           | 等待 5 秒后重试          |
+| 🟠 高    | 61% ~ 80%       | 等待 15 秒后重试         |
+| 🔴 极高  | > 80%           | 等待 30 秒，记录警告     |
+| ⏰ 超时  | 超过 120 秒      | 强制启动（安全阀）       |
 
-**示例输出**:
+**示例输出**：
+
 ```
-💻 CPU使用率 45% 低于阈值 50%,可以启动应用
-⏳ 等待CPU使用率降低... 当前: 65%, 阈值: 50%, 已等待: 2.5s
-💻 CPU使用率 48% 低于阈值 50%,可以启动应用
+💻 [Unity] CPU 45% ≤ 阈值 50%，启动
+⏳ [Unity] CPU 65% > 50%，等待 15s（已等 30s）
+💻 [Unity] CPU 48% ≤ 阈值 50%，启动
+⏰ [Unity] 等待超时 120s，强制启动
 ```
-
----
 
 ### 2. 应用状态检查
 
-启动前会检查应用是否已在运行,根据 `AppAlreadyRunningAction` 配置决定:
+启动前自动检查应用是否已在运行。**已在运行的应用自动跳过**（无需配置）：
 
-**Skip 模式**(跳过):
 ```
-🔄 [微信] 应用已在运行,跳过启动
-```
-
-**Restart 模式**(强制重启):
-```
-⚠️ [微信] 应用已在运行,正在重启...
-✅ [微信] 应用启动成功!
+🚂 [微信] 已在运行，跳过
 ```
 
----
+### 3. 启动后验证
 
-### 3. 启动超时保护
+每个应用启动后验证进程是否存活，若进程立即退出则记录错误：
 
-每个应用启动后会等待 `StartTimeout` 秒,确认应用成功启动。如果应用在超时时间内退出或无法启动,会记录错误并继续启动下一个应用。
+**正常启动**：
 
-**正常启动**:
 ```
-✅ [VSCode] 应用启动成功!
+✅ [VSCode] 启动成功 (PID 12345)
 ```
 
-**启动失败**:
+**启动失败**：
+
 ```
-❌ [VSCode] 应用启动后立即退出!
-⏩ [VSCode] 应用启动失败,继续启动下一个应用
+❌ [VSCode] 进程已退出
 ```
 
 ---
@@ -1033,16 +892,19 @@ Start-Process "D:\Unity\Unity.exe" -ArgumentList "-projectPath `"D:\Projects\MyP
 支持启动带命令行参数的应用程序:
 
 **格式 1:使用引号包裹可执行文件路径**
+
 ```ini
 Unity="D:\Unity\Editor\Unity.exe" -projectPath "D:\Projects\MyProject"
 ```
 
 **格式 2:路径和参数用空格分隔**
+
 ```ini
 Code="D:\VSCode\Code.exe" "D:\Projects\MyProject"
 ```
 
 **格式 3:多个参数**
+
 ```ini
 MyApp="C:\My App\app.exe" -arg1 "value with spaces" -arg2 value2
 ```
@@ -1056,4 +918,3 @@ MyApp="C:\My App\app.exe" -arg1 "value with spaces" -arg2 value2
 Made with ❤️ by BatchStart Contributors
 
 </div>
-

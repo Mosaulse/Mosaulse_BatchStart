@@ -39,10 +39,11 @@
                 </div>
             </section>
 
-            <!-- 设置配置区域 -->
+            <!-- 日志配置区域（唯一可配置的全局设置） -->
             <section class="config-section">
                 <div class="section-header">
-                    <h2>⚙️ 全局设置</h2>
+                    <h2>📝 日志配置</h2>
+                    <span class="section-hint">其他启动参数（间隔、超时）已内置智能化策略</span>
                 </div>
                 <div class="settings-grid">
                     <div class="setting-item">
@@ -53,31 +54,12 @@
                         </select>
                     </div>
                     <div class="setting-item">
-                        <label>CPU使用率阈值 (%)</label>
-                        <input type="number" id="CPUThreshold" class="form-control" min="0" max="100" value="50">
-                    </div>
-                    <div class="setting-item">
-                        <label>最小启动间隔 (秒)</label>
-                        <input type="number" id="MinInterval" class="form-control" min="0" value="1">
-                    </div>
-                    <div class="setting-item">
                         <label>日志文件路径</label>
                         <input type="text" id="LogFilePath" class="form-control" value="BatchStart.log">
                     </div>
                     <div class="setting-item">
-                        <label>最大等待时间 (秒)</label>
-                        <input type="number" id="MaxWaitTime" class="form-control" min="0" value="5">
-                    </div>
-                    <div class="setting-item">
-                        <label>启动超时时间 (秒)</label>
-                        <input type="number" id="StartTimeout" class="form-control" min="0" value="10">
-                    </div>
-                    <div class="setting-item">
-                        <label>已运行应用处理方式</label>
-                        <select id="AppAlreadyRunningAction" class="form-control">
-                            <option value="Skip">跳过</option>
-                            <option value="Restart">强制重启</option>
-                        </select>
+                        <label>CPU 使用率阈值 (%)</label>
+                        <input type="number" id="CPUThreshold" class="form-control" min="1" max="100" value="50">
                     </div>
                 </div>
             </section>

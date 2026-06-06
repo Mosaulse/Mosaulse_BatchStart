@@ -292,6 +292,8 @@ header h1 {
     padding-bottom: 16px;
     border-bottom: 2px solid var(--section-border);
     transition: border-color 0.3s ease;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .section-header h2 {
@@ -302,6 +304,13 @@ header h1 {
     gap: 12px;
     transition: color 0.3s ease;
     font-weight: 600;
+}
+
+.section-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    white-space: nowrap;
 }
 
 /* 应用配置卡片 */
